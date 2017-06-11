@@ -18,6 +18,11 @@ create table ssubapi.station_destination (
     station_id integer not null,
     destination_id integer not null);
 
+create table ssubapi.timetable (
+    id serial unique primary key,
+    station_destination_id integer not null,
+    train_time time not null);
+
 insert into ssubapi.line (id, name) values (1, '南北線');
 insert into ssubapi.line (id, name) values (2, '東西線');
 
