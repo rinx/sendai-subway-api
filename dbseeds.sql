@@ -1,3 +1,5 @@
+drop schema if exists ssubapi cascade;
+
 create schema ssubapi;
 
 create table ssubapi.line (
