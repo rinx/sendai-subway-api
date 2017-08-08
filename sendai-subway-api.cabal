@@ -17,38 +17,31 @@ library
   hs-source-dirs:      src
   exposed-modules:     Lib
                      , Subway
-                     , ManipulateDB.Core
-                     , ManipulateDB.Query
-                     , ManipulateDB.Line
-                     , ManipulateDB.Station
-                     , ManipulateDB.Destination
-                     , ManipulateDB.LineStation
-                     , ManipulateDB.StationDestination
+                     , Subway.Types
   build-depends:       base >= 4.7 && < 5
                      , text
                      , time
+                     , mtl
                      , scalpel
                      , MissingH
-                     , HDBC
-                     , HDBC-postgresql
-                     , HDBC-session
-                     , relational-record
-                     , relational-query
-                     , relational-query-HDBC
-                     , persistable-record
+                     , Spock-core
+                     , postgresql-simple
+                     , aeson
   default-language:    Haskell2010
 
 executable sendai-subway-api
   hs-source-dirs:      app
   main-is:             Main.hs
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
-  build-depends:       base
-                     , spock-sample
+  build-depends:       sendai-subway-api
+                     , base
                      , Spock >= 0.11
+                     , Spock-core
                      , mtl
                      , text
                      , http-types
                      , aeson
+                     , postgresql-simple
   default-language:    Haskell2010
 
 test-suite sendai-subway-api-test
@@ -56,7 +49,6 @@ test-suite sendai-subway-api-test
   hs-source-dirs:      test
   main-is:             Spec.hs
   build-depends:       base
-                     , spock-sample
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   default-language:    Haskell2010
 
