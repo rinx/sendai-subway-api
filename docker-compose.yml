@@ -1,0 +1,16 @@
+worker:
+  build: .
+  command: 'bash -c ''/app/user/dist/build/sendai-subway-api/sendai-subway-api'''
+  working_dir: /app/user
+shell:
+  build: .
+  working_dir: /app/user
+  environment:
+    PORT: 8080
+  ports:
+    - '8080:8080'
+  volumes:
+    - '.:/app/user'
+web:
+  build: .
+  working_dir: /app/user
