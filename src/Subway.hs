@@ -19,6 +19,7 @@ import Data.Time
 import Data.Time.LocalTime
 import Data.Time.Calendar.WeekDate
 import Data.String.Utils
+import Data.List
 
 getStations :: IO [Station]
 getStations = return
@@ -53,12 +54,14 @@ getStations = return
     , Station 9738 "荒井"
     ]
 
-getStationData :: String -> IO [String]
+getStationData :: String -> IO [TimeTableData]
 getStationData x = do
     res <- comSubway x
-    return [res]
+    case res of
+        Just x -> return [x]
+        Nothing -> return []
 
-comSubway :: String -> IO String
+comSubway :: String -> IO (Maybe TimeTableData)
 comSubway ss = do
     ctz <- getCurrentTimeZone
     ct <- getCurrentTime
@@ -66,29 +69,23 @@ comSubway ss = do
     locmin  <- return $ todMin . localTimeOfDay $ utcToLocalTime ctz ct
     (StationData sc ds) <- return $ getStaCode ss
     res <- comSubway' ct ctz lochour sc ds
-    return $ if res /= ""
-        then ss ++ "の" ++ (show lochour) ++ "時台の電車は\n" ++ res ++ "です。"
-        else ""
+    return $ res
 
-comSubway' :: UTCTime -> TimeZone -> Int -> StaCode -> StaDest -> IO String
-comSubway' _ _ _ _ [] = return $ ""
+comSubway' :: UTCTime -> TimeZone -> Int -> StaCode -> StaDest -> IO (Maybe TimeTableData)
 comSubway' ct ctz lochour sc (d:ds) = do
     let url = mkURL sc $ fst d
     tt <- scrapeTT ct ctz lochour url
-    threadDelay $ if ds == []
-                      then 0
-                      else 3000000
-    ts <- comSubway' ct ctz lochour sc ds
-    return $ if tt /= ""
-                 then (snd d) ++ ":" ++ tt ++ "\n" ++ ts
-                 else "" ++ ts
+    return $
+        if not $ null tt
+            then Just $ TimeTableData (StationData sc [d]) (show lochour) tt
+            else Nothing
 
-scrapeTT :: UTCTime -> TimeZone -> Int -> String -> IO String
+scrapeTT :: UTCTime -> TimeZone -> Int -> String -> IO [StrMin]
 scrapeTT ct ctz lochour url = do
     cd <- return $ utctDay ct
     tts <- scrapeURL url timetables
     let (_, _, w) = toWeekDate cd
-    return $ unwords $ getTT tts w lochour
+    return $ getTT tts w lochour
 
 mkURL :: String -> String -> String
 mkURL code dest =

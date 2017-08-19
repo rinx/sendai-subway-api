@@ -2,6 +2,7 @@
 
 module Subway.Types
     ( Station(..)
+    , TimeTableData(..)
     , StrHour
     , StrMin
     , StaCode
@@ -18,6 +19,12 @@ data Station = Station
     , name :: String
     } deriving (Generic, Show)
 
+data TimeTableData = TimeTableData
+    { stationData :: StationData
+    , hour :: StrHour
+    , mins :: [StrMin]
+    } deriving (Generic, Show)
+
 type StrHour = String
 type StrMin  = String
 type StaCode = String
@@ -25,5 +32,8 @@ type StaDest = [(String, String)]
 
 data TimeTable = TimeTable [StrMin] StrHour [StrMin]
 data StationData = StationData StaCode StaDest
+    deriving (Generic, Show)
 
 instance ToJSON Station
+instance ToJSON TimeTableData
+instance ToJSON StationData
