@@ -22,7 +22,10 @@ import Data.String.Utils
 import Data.List
 
 getStations :: IO [Station]
-getStations = return
+getStations = return stationList
+
+stationList :: [Station]
+stationList =
     [ Station 9285 "仙台"
     , Station 6646 "泉中央"
     , Station 6647 "八乙女"
@@ -54,6 +57,16 @@ getStations = return
     , Station 9738 "荒井"
     ]
 
+getStationNameByCode :: Int -> String
+getStationNameByCode code = getStationNameByCode' stationList code
+    where
+        getStationNameByCode' [] _ = ""
+        getStationNameByCode' (x:xs) c =
+            let (Station c' name) = x in
+                if c' == c
+                    then name
+                    else getStationNameByCode' xs c
+
 getStationData :: String -> IO [TimeTableData]
 getStationData x = do
     res <- comSubway x
@@ -77,7 +90,7 @@ comSubway' ct ctz lochour sc (d:ds) = do
     tt <- scrapeTT ct ctz lochour url
     return $
         if not $ null tt
-            then Just $ TimeTableData (StationData sc [d]) (show lochour) tt
+            then Just $ TimeTableData (getStationNameByCode $ read sc) (snd d) (show lochour) tt
             else Nothing
 
 scrapeTT :: UTCTime -> TimeZone -> Int -> String -> IO [StrMin]

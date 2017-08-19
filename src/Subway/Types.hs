@@ -20,7 +20,8 @@ data Station = Station
     } deriving (Generic, Show)
 
 data TimeTableData = TimeTableData
-    { stationData :: StationData
+    { stationName :: String
+    , destinationName :: String
     , hour :: StrHour
     , mins :: [StrMin]
     } deriving (Generic, Show)
