@@ -68,13 +68,9 @@ getStationNameByCode code = getStationNameByCode' stationList code
                     else getStationNameByCode' xs c
 
 getStationData :: String -> IO [TimeTableData]
-getStationData x = do
-    res <- comSubway x
-    case res of
-        Just x -> return [x]
-        Nothing -> return []
+getStationData x = comSubway x
 
-comSubway :: String -> IO (Maybe TimeTableData)
+comSubway :: String -> IO [TimeTableData]
 comSubway ss = do
     ctz <- getCurrentTimeZone
     ct <- getCurrentTime
@@ -84,14 +80,16 @@ comSubway ss = do
     res <- comSubway' ct ctz sc ds
     return $ res
 
-comSubway' :: UTCTime -> TimeZone -> StaCode -> StaDest -> IO (Maybe TimeTableData)
+comSubway' :: UTCTime -> TimeZone -> StaCode -> StaDest -> IO [TimeTableData]
+comSubway' _ _ _ [] = return $ []
 comSubway' ct ctz sc (d:ds) = do
     let url = mkURL sc $ fst d
     tt <- scrapeTT ct url
+    ts <- comSubway' ct ctz sc ds
     return $
         if not $ null tt
-            then Just $ TimeTableData (getStationNameByCode $ read sc) (snd d) tt
-            else Nothing
+            then (TimeTableData (getStationNameByCode $ read sc) (snd d) tt):ts
+            else []
 
 scrapeTT :: UTCTime -> String -> IO [TimeTable]
 scrapeTT ct url = do
