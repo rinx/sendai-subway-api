@@ -7,6 +7,7 @@ module Subway.Types
     , StrMin
     , StaCode
     , StaDest
+    , RawTimeTable(..)
     , TimeTable(..)
     , StationData(..)
     ) where
@@ -20,10 +21,9 @@ data Station = Station
     } deriving (Generic, Show)
 
 data TimeTableData = TimeTableData
-    { stationName :: String
-    , destinationName :: String
-    , hour :: StrHour
-    , mins :: [StrMin]
+    { station :: String
+    , destination :: String
+    , timetable :: [TimeTable]
     } deriving (Generic, Show)
 
 type StrHour = String
@@ -31,10 +31,16 @@ type StrMin  = String
 type StaCode = String
 type StaDest = [(String, String)]
 
-data TimeTable = TimeTable [StrMin] StrHour [StrMin]
+data RawTimeTable = RawTimeTable [StrMin] StrHour [StrMin]
+    deriving (Generic, Show)
+data TimeTable = TimeTable
+    { hour :: StrHour
+    , mins :: [StrMin]
+    } deriving (Generic, Show)
 data StationData = StationData StaCode StaDest
     deriving (Generic, Show)
 
 instance ToJSON Station
 instance ToJSON TimeTableData
+instance ToJSON TimeTable
 instance ToJSON StationData

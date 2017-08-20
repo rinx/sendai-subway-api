@@ -81,24 +81,24 @@ comSubway ss = do
     lochour <- return $ todHour . localTimeOfDay $ utcToLocalTime ctz ct
     locmin  <- return $ todMin . localTimeOfDay $ utcToLocalTime ctz ct
     (StationData sc ds) <- return $ getStaCode ss
-    res <- comSubway' ct ctz lochour sc ds
+    res <- comSubway' ct ctz sc ds
     return $ res
 
-comSubway' :: UTCTime -> TimeZone -> Int -> StaCode -> StaDest -> IO (Maybe TimeTableData)
-comSubway' ct ctz lochour sc (d:ds) = do
+comSubway' :: UTCTime -> TimeZone -> StaCode -> StaDest -> IO (Maybe TimeTableData)
+comSubway' ct ctz sc (d:ds) = do
     let url = mkURL sc $ fst d
-    tt <- scrapeTT ct ctz lochour url
+    tt <- scrapeTT ct url
     return $
         if not $ null tt
-            then Just $ TimeTableData (getStationNameByCode $ read sc) (snd d) (show lochour) tt
+            then Just $ TimeTableData (getStationNameByCode $ read sc) (snd d) tt
             else Nothing
 
-scrapeTT :: UTCTime -> TimeZone -> Int -> String -> IO [StrMin]
-scrapeTT ct ctz lochour url = do
+scrapeTT :: UTCTime -> String -> IO [TimeTable]
+scrapeTT ct url = do
     cd <- return $ utctDay ct
     tts <- scrapeURL url timetables
     let (_, _, w) = toWeekDate cd
-    return $ getTT tts w lochour
+    return $ getTT tts w
 
 mkURL :: String -> String -> String
 mkURL code dest =
@@ -106,35 +106,36 @@ mkURL code dest =
     where
         params = "?PrintCode=" ++ code ++ "&PrintDest=" ++ dest
 
-timetables :: Scraper String [TimeTable]
+timetables :: Scraper String [RawTimeTable]
 timetables = chroots ("table" @: [hasClass "timetable_p_s"] // "tr") tditem
 
-tditem :: Scraper String TimeTable
+tditem :: Scraper String RawTimeTable
 tditem = do
     weekdaymins <- text $ "td" @: ["id" @= "timetable"]
     hour        <- text $ "td" @: ["id" @= "time"]
     weekendmins <- text $ "td" @: ["id" @= "timetable"]
     let weekdaymin = words $ replace "&nbsp;" " " weekdaymins
         weekendmin = words $ replace "&nbsp;" " " weekendmins
-    return $ TimeTable weekdaymin hour weekendmin
+        hour' = replace " " "" $ replace "\n" "" $ hour
+    return $ RawTimeTable weekdaymin hour' weekendmin
 
-getTT :: Maybe [TimeTable] -> Int -> Int -> [StrMin]
-getTT Nothing _ _ = []
-getTT (Just tts) day hr
-    | day < 6   = strWeekDayTT $ searchTTwithHr tts hr
-    | otherwise = strWeekEndTT $ searchTTwithHr tts hr
+getTT :: Maybe [RawTimeTable] -> Int -> [TimeTable]
+getTT Nothing _ = []
+getTT (Just tts) day
+    | day < 6   = map strWeekDayTT $ map (searchTTwithHr tts) $ [0..23]
+    | otherwise = map strWeekEndTT $ map (searchTTwithHr tts) $ [0..23]
 
-strWeekDayTT :: TimeTable -> [StrMin]
-strWeekDayTT (TimeTable ss _ _) = ss
+strWeekDayTT :: RawTimeTable -> TimeTable
+strWeekDayTT (RawTimeTable ss h _) = TimeTable h ss
 
-strWeekEndTT :: TimeTable -> [StrMin]
-strWeekEndTT (TimeTable _ _ ss) = ss
+strWeekEndTT :: RawTimeTable -> TimeTable
+strWeekEndTT (RawTimeTable _ h ss) = TimeTable h ss
 
-strTThr :: TimeTable -> String
-strTThr (TimeTable _ hr _) = replace " " "" $ replace "\n" "" hr
+strTThr :: RawTimeTable -> String
+strTThr (RawTimeTable _ hr _) = replace " " "" $ replace "\n" "" hr
 
-searchTTwithHr :: [TimeTable] -> Int -> TimeTable
-searchTTwithHr [] _ = TimeTable [] "" []
+searchTTwithHr :: [RawTimeTable] -> Int -> RawTimeTable
+searchTTwithHr [] _ = RawTimeTable [] "" []
 searchTTwithHr (tt:ts) hr
     | strTThr tt == (show hr) = tt
     | otherwise = searchTTwithHr ts hr
